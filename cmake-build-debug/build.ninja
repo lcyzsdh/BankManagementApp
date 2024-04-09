@@ -51,7 +51,7 @@ build cmake_object_order_depends_target_BankApp: phony || CMakeFiles/BankApp.dir
 
 build CMakeFiles/BankApp.dir/main.cpp.o: CXX_COMPILER__BankApp_unscanned_Debug /Users/luchenyang/Documents/developing/BankApp/main.cpp || cmake_object_order_depends_target_BankApp
   DEP_FILE = CMakeFiles/BankApp.dir/main.cpp.o.d
-  FLAGS = -g -std=gnu++11 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk -fcolor-diagnostics
+  FLAGS = -g -std=gnu++11 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.4.sdk -fcolor-diagnostics
   OBJECT_DIR = CMakeFiles/BankApp.dir
   OBJECT_FILE_DIR = CMakeFiles/BankApp.dir
   TARGET_COMPILE_PDB = CMakeFiles/BankApp.dir/
@@ -66,7 +66,7 @@ build CMakeFiles/BankApp.dir/main.cpp.o: CXX_COMPILER__BankApp_unscanned_Debug /
 # Link the executable BankApp
 
 build BankApp: CXX_EXECUTABLE_LINKER__BankApp_Debug CMakeFiles/BankApp.dir/main.cpp.o
-  FLAGS = -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk
+  FLAGS = -g -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.4.sdk
   OBJECT_DIR = CMakeFiles/BankApp.dir
   POST_BUILD = :
   PRE_LINK = :

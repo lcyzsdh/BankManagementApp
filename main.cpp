@@ -25,7 +25,7 @@ private:
     }
 public:
     SavingAccount(int date,int id,double rate):lastDate(date),id(id),rate(rate){
-        cout<<"#"<<id<<"was created successfully."<<endl;
+        cout<<"#"<<id<<" was created successfully."<<endl;
     }
     int getId(){return id;}
     double getBalance(){return balance;}
@@ -33,7 +33,7 @@ public:
     void deposit(int date,double amount);
     void withdraw(int date,double amount);
     void settle(int date);
-    void show();
+    void show() const;
 
 };
 
@@ -42,11 +42,11 @@ void SavingAccount::record(Activity activity, int date, double amount) {
         lastDate=date;
         balance+=amount;
     } else{
-        lastDate=date;
         if(balance-amount<0){
             cout<<"Error!Balance is under zero!!!"<<endl;
         }
         else{
+            lastDate=date;
             balance-=amount;
         }
     }
@@ -61,11 +61,15 @@ void SavingAccount::withdraw(int date, double amount) {
 }
 
 void SavingAccount::settle(int date) {
-
+    double interest = accumulate(date)*rate/365;
+    if(interest!=0){
+        record(Activity::DEPOSIT,date,interest);
+    }
+    accumulation=0;
 }
 
-void SavingAccount::show() {
-    cout<<"#"<<balance
+void SavingAccount::show() const {
+    cout<<"#"<<id<<"   have "<<balance<<endl;
 }
 
 int main() {
