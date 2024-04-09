@@ -3,4 +3,5 @@ project(BankApp)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(BankApp main.cpp)
+add_executable(BankApp account.cpp
+        account.h)

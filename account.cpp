@@ -1,8 +1,7 @@
+#include "account.h"
 #include <iostream>
 
 using namespace std;
-
-enum class Activity{DEPOSIT,WITHDRAW};
 
 class Date{
 private:
@@ -11,36 +10,13 @@ public:
     Date(int y,int m,int d):year(y),month(m),day(d){}
 };
 
-//储存账户类
-class SavingAccount{
-private:
-    int id;//账号
-    double balance{};//余额
-    double rate;//定期存款利率
-    int lastDate;//最后更新日期
-    double accumulation{};//余额累积存款之和
-    void record(Activity activity,int date,double amount);//操作
-    double accumulate(int date) const{
-        return accumulation+balance*(date-lastDate);
-    }
-public:
-    SavingAccount(int date,int id,double rate):lastDate(date),id(id),rate(rate){
-        cout<<"#"<<id<<" was created successfully."<<endl;
-    }
-    int getId(){return id;}
-    double getBalance(){return balance;}
-    double getRate(){return rate;}
-    void deposit(int date,double amount);
-    void withdraw(int date,double amount);
-    void settle(int date);
-    void show() const;
-
-};
+double SavingAccount::total=0;
 
 void SavingAccount::record(Activity activity, int date, double amount) {
     if(activity==Activity::DEPOSIT){
         lastDate=date;
         balance+=amount;
+        total+=amount;
     } else{
         if(balance-amount<0){
             cout<<"Error!Balance is under zero!!!"<<endl;
@@ -48,6 +24,7 @@ void SavingAccount::record(Activity activity, int date, double amount) {
         else{
             lastDate=date;
             balance-=amount;
+            total-=amount;
         }
     }
 }
@@ -72,6 +49,10 @@ void SavingAccount::show() const {
     cout<<"#"<<id<<"   have "<<balance<<endl;
 }
 
+SavingAccount::SavingAccount(int date, int id, double rate) :lastDate(date),id(id),rate(rate),accumulation(0){
+    cout<<date<<"\t#"<<id<<" is created."<<endl;
+}
+
 int main() {
     SavingAccount s1(1,136,0.08);
     SavingAccount s2(1,137,0.05);
@@ -82,5 +63,6 @@ int main() {
     s2.settle(50);
     s1.show();
     s2.show();
+    cout<<"Total::"<<SavingAccount::getTotal()<<endl;
     return 0;
 }
