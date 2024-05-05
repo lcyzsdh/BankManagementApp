@@ -3,12 +3,14 @@
 #include<cmath>
 using namespace std;
 
-double SavingAccount::total=0;
+double Account::total=0;
 
-void SavingAccount::record(Activity activity,const Date &date,double amount,const std::string &desc) {
+Account::Account(const Date &date, const std::string &id) :id(id),balance(0){
+    date.show();cout<<"\t#"<<id<<" is created."<<endl;
+}
+
+void Account::record(Activity activity,const Date &date,double amount,const std::string &desc) {
     if(activity==Activity::DEPOSIT){
-        accumulation= accumulate(date);
-        lastDate=date;
         amount= floor(amount*100+0.5)/100;
         balance+=amount;
         total+=amount;
@@ -19,42 +21,60 @@ void SavingAccount::record(Activity activity,const Date &date,double amount,cons
             cout<<"Error!Balance is under zero!!!"<<endl;
         }
         else{
-            accumulation= accumulate(date);
-            lastDate=date;
             amount= floor(amount*100+0.5)/100;
-            balance+=amount;
-            total+=amount;
+            balance-=amount;
+            total-=amount;
             date.show();
             cout<<"\t#"<<id<<"\t"<<amount<<"\t"<<balance<<"\t"<<desc<<endl;
         }
     }
 }
-
+void Account::error(const string &msg) const {
+    cout<<"error:  "<<msg<<endl;
+}
+void Account::show() const {
+    cout<<"#"<<id<<"   have "<<balance<<endl;
+}
+//SavingAccount实现
 void SavingAccount::deposit(const Date &date, double amount,const std::string &desc) {
     record(Activity::DEPOSIT,date,amount,desc);
+    acc.change(date,getBalance());
 }
 
 void SavingAccount::withdraw(const Date &date, double amount,const std::string &desc) {
     record(Activity::WITHDRAW,date,amount,desc);
+    acc.change(date,getBalance());
 }
 
 void SavingAccount::settle(const Date& date) {
-    double interest = accumulate(date)*rate/365;
+    double interest = acc.getSum(date)*rate/date.distance(Date(date.getYear()-1,1,1));//计算年息
     if(interest!=0){
-        record(Activity::DEPOSIT,date,interest,"settle");
+        record(Activity::DEPOSIT,date,interest,"interest");
     }
-    accumulation=0;
+    acc.reset(date,getBalance());
 }
 
-void SavingAccount::show() const {
-    cout<<"#"<<id<<"   have "<<balance<<endl;
-}
 
-SavingAccount::SavingAccount(const Date &date, const string &id, double rate) : lastDate(date), id(id), rate(rate), accumulation(0){
-    lastDate.show();
-    cout<<"\t#"<<id<<" is created."<<endl;
+SavingAccount::SavingAccount(const Date &date, const string &id, double rate) : Account(date,id),rate(rate),acc(date,0){}
+//CreditAccount实现
+CreditAccount::CreditAccount(const Date &date, const std::string &id, double credit, double rate, double fee) : Account(date,id),credit(credit),rate(rate),fee(fee),acc(date,0){}
+void CreditAccount::deposit(const Date &date, double amount, const std::string &desc) {
+    record(Activity::DEPOSIT,date,amount,desc);
+    acc.change(date,getDebt());
 }
-
-void SavingAccount::error(const string &msg) const {
-cout<<"error:  "<<msg<<endl;
+void CreditAccount::withdraw(const Date &date, double amount, const std::string &desc) {
+    record(Activity::DEPOSIT,date,amount,desc);
+    acc.change(date,getDebt());
+}
+void CreditAccount::settle(const Date &date) {
+    double interest=acc.getSum(date)*rate;
+    if(interest!=0){ record(Activity::DEPOSIT,date,interest,"interest");}
+    if(date.getMonth()==1){
+        record(Activity::WITHDRAW,date,fee,"annual fee");
+    }
+    acc.reset(date,getDebt());
+}
+void CreditAccount::show() const {
+    Account::show();
+    cout<<"\tAvailable credit: "<<getAvailableCredit();
 }
