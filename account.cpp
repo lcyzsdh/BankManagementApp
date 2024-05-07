@@ -47,7 +47,7 @@ void SavingAccount::withdraw(const Date &date, double amount,const std::string &
 }
 
 void SavingAccount::settle(const Date& date) {
-    double interest = acc.getSum(date)*rate/date.distance(Date(date.getYear()-1,1,1));//计算年息
+    double interest = acc.getSum(date)*rate/(date-Date(date.getYear()-1,1,1));//计算年息
     if(interest!=0){
         record(Activity::DEPOSIT,date,interest,"interest");
     }

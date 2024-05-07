@@ -27,7 +27,10 @@ public:
     static double getTotal() {
         return total;
     }
-    void show()const;
+    virtual void deposit(const Date &date,double amount,const std::string &desc)=0;
+    virtual void withdraw(const Date &date,double amount,const std::string &desc)=0;
+    virtual void settle(const Date &date)=0;
+    virtual void show()const;
 };
 
 //储存账户类
@@ -38,9 +41,9 @@ private:
 public:
     SavingAccount(const Date &date, const string &id, double rate);
     double getRate()const{return rate;}
-    void deposit(const Date &date,double amount,const std::string &desc);
-    void withdraw(const Date &date,double amount,const std::string &desc);
-    void settle(const Date &date);
+    void deposit(const Date &date,double amount,const std::string &desc) override;
+    void withdraw(const Date &date,double amount,const std::string &desc) override;
+    void settle(const Date &date) override;
 
 };
 
