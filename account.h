@@ -7,14 +7,28 @@
 #include "accumulator.h"
 #include "date.h"
 #include <string>
+#include <map>
 using namespace std;
 enum class Activity{DEPOSIT,WITHDRAW};
-
+class Account;
+class AccountRecord{
+private:
+    Date date;
+    const Account *account;
+    double amount;
+    double balance;
+    string desc;
+public:
+    AccountRecord(const Date &date,const Account *account,double amount,double balance,std::string desc);
+    void show()const;
+};
+typedef multimap<Date,AccountRecord> RecordMap;
 class Account{
 private:
     string id;
     double balance;
     static double total;
+    static RecordMap recordMap;
 protected:
     Account(const Date &date, const string &id);
     void record(Activity activity,const Date &date,double amount,const std::string &desc);
@@ -31,6 +45,7 @@ public:
     virtual void withdraw(const Date &date,double amount,const std::string &desc)=0;
     virtual void settle(const Date &date)=0;
     virtual void show()const;
+    static void query(const Date& begin,const Date& end);//查询时间
 };
 
 //储存账户类
@@ -41,7 +56,7 @@ private:
 public:
     SavingAccount(const Date &date, const string &id, double rate);
     double getRate()const{return rate;}
-    void deposit(const Date &date,double amount,const std::string &desc) override;
+    void deposit(const Date &date,double amount,const std::string &desc) override ;
     void withdraw(const Date &date,double amount,const std::string &desc) override;
     void settle(const Date &date) override;
 
@@ -74,9 +89,9 @@ public:
             return credit;
         }
     }
-    void deposit(const Date &date,double amount,const std::string &desc);
-    void withdraw(const Date &date,double amount,const std::string &desc);
-    void settle(const Date &date);
-    void show()const;
+    void deposit(const Date &date,double amount,const std::string &desc) override;
+    void withdraw(const Date &date,double amount,const std::string &desc)override;
+    void settle(const Date &date)override;
+    void show()const override;
 };
 #endif //BANKAPP_ACCOUNT_H

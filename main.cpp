@@ -25,6 +25,11 @@ void test(){
     accounts[1]->show();cout<<endl;
     ca.show();cout<<endl;
     cout<<"Total: "<<SavingAccount::getTotal()<<endl;
+
+
+    Date d1=Date::read();
+    Date d2=Date::read();
+    Account::query(d1,d2);
 }
 
 int main(){

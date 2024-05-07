@@ -33,3 +33,10 @@ void Date::show() const {
     cout<<getYear()<<'-'<<getMonth()<<'-'<<getDay()<<endl;
 }
 
+Date Date::read() {
+    int y,m,d;
+    char c1,c2;
+    cin>>y>>c1>>m>>c2>>d;
+    return {y,m,d};
+}
+

@@ -10,6 +10,7 @@ private:
     int totalDays;//从公元元年1月1日开始的第几天
 public:
     Date(int y,int m,int d);
+    static Date read();
     int getDay() const{return day;}
     int getMonth() const{return month;}
     int getYear() const{return year;}
@@ -20,6 +21,9 @@ public:
     void show() const;
     int operator- (const Date& date)const {
         return totalDays-date.totalDays;
+    }
+    bool operator< (const Date& date)const{
+        return totalDays<date.totalDays;
     }
 };
 #endif //BANKAPP_DATE_H
