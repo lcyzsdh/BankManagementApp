@@ -33,10 +33,15 @@ void Date::show() const {
     cout<<getYear()<<'-'<<getMonth()<<'-'<<getDay()<<endl;
 }
 
-Date Date::read() {
+istream& operator>> (std::istream &in,Date &date){
     int y,m,d;
     char c1,c2;
-    cin>>y>>c1>>m>>c2>>d;
-    return {y,m,d};
+    in>>y>>c1>>m>>c2>>d;
+    date=Date(y,m,d);
+    return in;
 }
 
+ostream & operator<< (std::ostream  &out,const Date &date){
+    out<<date.getYear()<<'-'<<date.getMonth()<<'-'<<date.getDay();
+    return out;
+}

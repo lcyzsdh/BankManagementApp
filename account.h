@@ -8,6 +8,7 @@
 #include "date.h"
 #include <string>
 #include <map>
+#include <istream>
 using namespace std;
 enum class Activity{DEPOSIT,WITHDRAW};
 class Account;
@@ -44,9 +45,13 @@ public:
     virtual void deposit(const Date &date,double amount,const std::string &desc)=0;
     virtual void withdraw(const Date &date,double amount,const std::string &desc)=0;
     virtual void settle(const Date &date)=0;
-    virtual void show()const;
+    virtual void show(std::ostream &out)const;
     static void query(const Date& begin,const Date& end);//查询时间
 };
+inline ostream & operator<< (ostream &out,const Account &account){
+    account.show(out);
+    return out;
+}
 
 //储存账户类
 class SavingAccount:public Account{
@@ -59,7 +64,6 @@ public:
     void deposit(const Date &date,double amount,const std::string &desc) override ;
     void withdraw(const Date &date,double amount,const std::string &desc) override;
     void settle(const Date &date) override;
-
 };
 
 class CreditAccount:public Account{
@@ -92,6 +96,6 @@ public:
     void deposit(const Date &date,double amount,const std::string &desc) override;
     void withdraw(const Date &date,double amount,const std::string &desc)override;
     void settle(const Date &date)override;
-    void show()const override;
+    void show(ostream &out)const override;
 };
 #endif //BANKAPP_ACCOUNT_H

@@ -8,8 +8,7 @@ AccountRecord::AccountRecord(const Date &date, const Account *account, double am
                              std::string desc) : date(date),account(account),amount(amount),
                              balance(balance),desc(std::move(desc)){}
 void AccountRecord::show() const {
-    date.show();
-    cout<<"\t#"<<account->getId()<<"\t"<<amount<<"\t"<<balance<<"\t"<<desc<<endl;
+    cout<<date<<"\t#"<<account->getId()<<"\t"<<amount<<"\t"<<balance<<"\t"<<desc<<endl;
 }
 double Account::total=0;
 RecordMap Account::recordMap;
@@ -23,7 +22,7 @@ void Account::query(const Date &begin, const Date &end) {
     }
 }
 Account::Account(const Date &date, const std::string &id) :id(id),balance(0){
-    date.show();cout<<"\t#"<<id<<" is created."<<endl;
+    cout<<date<<"\t#"<<id<<" is created."<<endl;
 }
 
 void Account::record(Activity activity,const Date &date,double amount,const std::string &desc) {
@@ -50,8 +49,8 @@ void Account::record(Activity activity,const Date &date,double amount,const std:
 void Account::error(const string &msg) const {
     cout<<"error:  "<<msg<<endl;
 }
-void Account::show() const {
-    cout<<"#"<<id<<"   have "<<balance<<endl;
+void Account::show(ostream &out) const {
+    out<<"#"<<id<<"   have "<<balance;
 }
 //SavingAccount实现
 void SavingAccount::deposit(const Date &date, double amount,const std::string &desc) {
@@ -92,7 +91,7 @@ void CreditAccount::settle(const Date &date) {
     }
     acc.reset(date,getDebt());
 }
-void CreditAccount::show() const {
-    Account::show();
+void CreditAccount::show(ostream &out) const {
+    Account::show(out);
     cout<<"\tAvailable credit: "<<getAvailableCredit();
 }

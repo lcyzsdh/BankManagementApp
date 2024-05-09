@@ -4,13 +4,13 @@
 
 #ifndef BANKAPP_DATE_H
 #define BANKAPP_DATE_H
+#include <iostream>
 class Date{
 private:
     int day,month,year;
     int totalDays;//从公元元年1月1日开始的第几天
 public:
     Date(int y,int m,int d);
-    static Date read();
     int getDay() const{return day;}
     int getMonth() const{return month;}
     int getYear() const{return year;}
@@ -26,4 +26,7 @@ public:
         return totalDays<date.totalDays;
     }
 };
+std::istream & operator>> (std::istream &in,Date &date);
+std::ostream & operator<< (std::ostream &out,const Date &date);
+
 #endif //BANKAPP_DATE_H
