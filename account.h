@@ -98,4 +98,11 @@ public:
     void settle(const Date &date)override;
     void show(ostream &out)const override;
 };
+class AccountException:public std::runtime_error{
+private:
+    const Account *account;
+public:
+    AccountException(const Account *account,const std::string &msg): std::runtime_error(msg),account(account){}
+    const Account *getAccount() const{return account;}
+};
 #endif //BANKAPP_ACCOUNT_H

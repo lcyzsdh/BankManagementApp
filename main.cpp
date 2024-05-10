@@ -103,7 +103,8 @@ bool Controller::runCommand(const string &cmdLine) {
     cout<<"Invalid command: "<<cmdLine<<endl;
     return false;
 }
-void test(){
+
+int main(){
     Date beginDate(2020,1,1);
     cout<<"(a)add account (d)deposit (w)withdraw (s)show (c)change day (n)next month (q)query (e)exit"<<endl;
 
@@ -113,7 +114,13 @@ void test(){
     ifstream fileIn(FILE_NAME);
     if(fileIn){
         while(getline(fileIn,cmdLine)){
-            controller.runCommand(cmdLine);
+            try {
+                controller.runCommand(cmdLine);
+            }catch (exception &e){
+                cout<<"Bad line in"<<FILE_NAME<<":"<<cmdLine<<endl;
+                cout<<"Error: "<<e.what()<<endl;
+                return 1;
+            }
         }
         fileIn.close();
     }
@@ -123,13 +130,15 @@ void test(){
         cout<<controller.getDate()<<"\tTotal: "<<Account::getTotal()<<"\tcommand>";
         string cmd;
         getline(cin,cmd);
-        if(controller.runCommand(cmd)){
-            fileOut<<cmd<<endl;
+        try{
+            if(controller.runCommand(cmd)){
+                fileOut<<cmd<<endl;
+            }
+        } catch (AccountException &e) {
+            cout<<"Error(#"<<e.getAccount()->getId()<<"):"<<e.what()<<endl;
+        } catch (exception &e) {
+            cout << "Error: " << e.what() << endl;
         }
     }
-}
-
-int main(){
-    test();
     return 0;
 }

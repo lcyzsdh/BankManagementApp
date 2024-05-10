@@ -3,6 +3,7 @@
 //
 #include "date.h"
 #include <iostream>
+#include<stdexcept>
 
 using namespace std;
 namespace {
@@ -10,7 +11,7 @@ namespace {
 }
 Date::Date(int y, int m, int d):year(y),month(m),day(d) {
     if(day<=0||day>getMonthDay()){
-        cout<<"Invalid date!!"<<endl;
+        throw runtime_error("Invalid date");
     }
     else{
         int years=year-1;
@@ -37,6 +38,9 @@ istream& operator>> (std::istream &in,Date &date){
     int y,m,d;
     char c1,c2;
     in>>y>>c1>>m>>c2>>d;
+    if(c1!='-'||c2!='-'){
+        throw runtime_error("Bad time format");
+    }
     date=Date(y,m,d);
     return in;
 }

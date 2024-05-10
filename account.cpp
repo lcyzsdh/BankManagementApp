@@ -47,7 +47,7 @@ void Account::record(Activity activity,const Date &date,double amount,const std:
     recordMap.insert(make_pair(date, AccountRecord(date,this,amount,balance,desc)));//对每笔记录
 }
 void Account::error(const string &msg) const {
-    cout<<"error:  "<<msg<<endl;
+    throw AccountException(this,msg);
 }
 void Account::show(ostream &out) const {
     out<<"#"<<id<<"   have "<<balance;
