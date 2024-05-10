@@ -10,7 +10,7 @@ private:
     int day,month,year;
     int totalDays;//从公元元年1月1日开始的第几天
 public:
-    Date(int y,int m,int d);
+    Date(int y=1,int m=1,int d=1);
     int getDay() const{return day;}
     int getMonth() const{return month;}
     int getYear() const{return year;}

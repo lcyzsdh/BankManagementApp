@@ -29,7 +29,7 @@ public:
 Controller::~Controller() {
     for_each(accounts.begin(),accounts.end(),deleter());
 }
-bool Controller::runCommand(const std::string &cmdLine) {
+bool Controller::runCommand(const string &cmdLine) {
     istringstream str(cmdLine);
     char cmd,type;
     int index,day;
@@ -40,40 +40,42 @@ bool Controller::runCommand(const std::string &cmdLine) {
     str>>cmd;
     switch (cmd) {
         case 'a':
-            cin>>type>>id;
+            str>>type>>id;
             if(type=='s'){
-                cin>>rate;
+                str>>rate;
                 account=new SavingAccount(date,id,rate);
             }
             else{
-                cin>>credit>>rate>>fee;
+                str>>credit>>rate>>fee;
                 account=new CreditAccount(date,id,credit,rate,fee);
             }
             accounts.push_back(account);
             return true;
         case 'd':
-            cin>>index>>amount;
-            getline(cin,desc);
+            str>>index>>amount;
+            getline(str,desc);
             accounts[index]->deposit(date,amount,desc);
             return true;
         case 'w':
-            cin>>index>>amount;
-            getline(cin,desc);
+            str>>index>>amount;
+            getline(str,desc);
             accounts[index]->withdraw(date,amount,desc);
             return true;
         case 's':
-            for(const auto &paccount:accounts){
-                cout<<"["<<i<<"]";
-                paccount->show();
+            for(int i=0;i<accounts.size();i++){
+                cout<<"["<<i<<']';
+                accounts[i]->show(cout);
                 cout<<endl;
             }
             return false;
         case 'c':
-            cin>>day;
+            str>>day;
             if(day<date.getDay()){
                 cout<<"You cannot specify a previous day";
+                return false;
             } else if(day>date.getMonthDay()){
-                cout<<"Invalid day;"
+                cout<<"Invalid day";
+                return false;
             }
             else{
                 date=Date(date.getYear(),date.getMonth(),day);
@@ -103,35 +105,28 @@ bool Controller::runCommand(const std::string &cmdLine) {
 }
 void test(){
     Date beginDate(2020,1,1);
-    vector<Account *> accounts;
-    cout<<"Welcome!"<<endl;
+    cout<<"(a)add account (d)deposit (w)withdraw (s)show (c)change day (n)next month (q)query (e)exit"<<endl;
 
     Controller controller(beginDate);
     string cmdLine;
-    //const
-    CreditAccount ca(beginDate,"c1111",1000000,0.0005,50);
-    SavingAccount s1(beginDate,"131313",0.015);
-    SavingAccount s2(beginDate,"13122",0.015);
-    Account *accounts[]={&s1,&s2,&ca};
-    //模拟
-    accounts[0]->deposit(Date(2024,11,5),5000,"salary");
-    ca.withdraw(Date(2024,11,15),200,"withdrew1");
-    accounts[1]->deposit(Date(2024,11,15),10000,"ok");
-    accounts[0]->deposit(Date(2024,12,12),100,"www");
-    accounts[1]->withdraw(Date(2024,12,15),200,"wat");
-    cout<<endl;
-    accounts[0]->settle(Date(2025,1,1));
-    accounts[1]->settle(Date(2025,1,1));
-    ca.settle(Date(2025,1,1));
-    //accounts[0]->show();cout<<endl;
-    //accounts[1]->show();cout<<endl;
-    //ca.show();cout<<endl;
-    cout<<"Total: "<<SavingAccount::getTotal()<<endl;
-
-
-    //Date d1=Date::read();
-    //Date d2=Date::read();
-    Account::query(d1,d2);
+    const char *FILE_NAME="commands.txt";
+    ifstream fileIn(FILE_NAME);
+    if(fileIn){
+        while(getline(fileIn,cmdLine)){
+            controller.runCommand(cmdLine);
+        }
+        fileIn.close();
+    }
+    ofstream fileOut(FILE_NAME,ios_base::app);
+    cout<<"(a)add account (d)deposit (w)withdraw (s)show (c)change day (n)next month (q)query (e)exit"<<endl;
+    while(!controller.isEnd()){
+        cout<<controller.getDate()<<"\tTotal: "<<Account::getTotal()<<"\tcommand>";
+        string cmd;
+        getline(cin,cmd);
+        if(controller.runCommand(cmd)){
+            fileOut<<cmd<<endl;
+        }
+    }
 }
 
 int main(){
