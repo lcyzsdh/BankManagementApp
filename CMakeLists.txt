@@ -8,4 +8,6 @@ add_executable(BankApp account.cpp
         date.h
         date.cpp
         main.cpp
-        accumulator.h)
+        accumulator.h
+        user.h
+        user.cpp)

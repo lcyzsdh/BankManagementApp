@@ -8,6 +8,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include "user.h"
 using namespace std;
 
 struct deleter{
@@ -104,7 +105,75 @@ bool Controller::runCommand(const string &cmdLine) {
     return false;
 }
 
+int load(){
+    cout<<"Welcome to bank management app!!!\nchoose (1)sign in(2)sign up(e)exit >";
+    string USER_FILE_NAME="user/user_list.txt";
+    char c;cin>>c;
+    while(c!='1'&&c!='2'&&c!='e'){
+        cout<<"Invalid command!"<<endl<<"Welcome to bank management app!!!\nchoose (1)sign in(2)sign up(e)exit >";
+        cin>>c;
+    }
+    string info;
+    ifstream userIn(USER_FILE_NAME);
+    if(c==1){
+        if(userIn){
+            bool flag= false;
+            string iName,iPassword;
+            cin>>iName>>iPassword;
+            while(getline(userIn,info)){
+                istringstream str(info);
+                string name,enPassword;
+                str>>name>>enPassword;
+                string dePassword=User::decryption(enPassword);
+                if(dePassword==iPassword&&iName==name){
+                    flag=true;
+                    break;
+                }
+            }
+            if(flag){
+                return 1;
+            }
+            else{
+                cout<<"Wrong user name or passsword!!"<<endl;
+                userIn.close();
+                return load();
+            }
+        }
+    }
+    else if(c==2){
+        string iName,iPassword;
+        cout<<"Please enter your name>";cin>>iName;cout<<endl;
+        cout<<"Please enter your password>";cin>>iPassword;cout<<endl;
+        int flag=1;
+        if(userIn){
+            while(getline(userIn,info)){
+                istringstream str(info);
+                string name,enPassword;
+                str>>name>>enPassword;
+                if(iName==name){
+                    flag=0;
+                    break;
+                }
+            }
+        }
+        if(flag==1){
+            cout<<"Create "<<iName<<"successfully."<<endl;
+            ofstream fileOut(USER_FILE_NAME,ios_base::app);
+            fileOut<<iName<<' '<<User::encryption(iPassword)<<endl;
+        }
+        else{
+            cout<<"The user has been created!"<<endl;
+            return load();
+        }
+    }
+    else{
+        return 0;
+    }
+}
+
 int main(){
+    load();
+
     Date beginDate(2020,1,1);
     cout<<"(a)add account (d)deposit (w)withdraw (s)show (c)change day (n)next month (q)query (e)exit"<<endl;
 
