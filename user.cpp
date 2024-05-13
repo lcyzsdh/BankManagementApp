@@ -5,45 +5,78 @@
 #include <fstream>
 #include <cmath>
 using namespace std;
-
+static const std::string base64_chars ="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 User::User(const std::string &name, const std::string &password) :name(name),decryptedPassword(password){
-
 }
 
-string trAscii(char c){
-    int a=(int)c;
-    int ans=0,k=1;
-    while(a>0){
-        ans+=(a%2)*k;
-        k*=10;
-        a/=2;
-    }
-    string s= to_string(ans);int l=s.length();
-    for(int i=l;i<=8;i++){
-        s="0"+s;
-    }
-    return s;
-}
-char trStr(string s){
-    int ans=0;
-    for(int i=0;i<6;i++){
-        ans+=((int)s[i])*pow(2,5-i);
-    }
-    char c=(char)ans;
-    return c;
-}
 string User::encryption(const std::string &password) {
-    string pass(password);string ans="";
-    int len=pass.length();
-    for(int i=0;i<len%3;i++){
-        pass.append("=");
+    string encode;
+    int b3[3]={},k=0;
+    int b4[4]={},m=0;
+    for(int i=0;i<password.length();i++){
+        b3[k++]=password[i];
+        if(k==3){
+            b4[0] = (b3[0] & 0xfc) >> 2;
+            b4[1] = ((b3[0] & 0x03) << 4) | ((b3[1] & 0xf0) >> 4);
+            b4[2] = ((b3[1] & 0x0f) << 2) | ((b3[2] & 0xc0) >> 6);
+            b4[3] = b3[2] & 0x3f;
+            for(int j=0;j<4;j++){
+                encode+=base64_chars[b4[j]];
+            }
+            k=0;
+        }
     }
-    len=pass.length();
-    for(int i=0;i<len;i+=3){
-        char a=pass[i],b=pass[i+1],c=pass[i+2];
-        string a1=trAscii(a),b1= trAscii(b),c1= trAscii(c);
-        string s1=a1.substr(0,6),s2=a1.substr(6,2)+b1.substr(0,4),s3=b1.substr(4,4)+c1.substr(0,2),s4=c1.substr(2,6);
-        ans=ans+ trStr(s1)+ trStr(s2)+ trStr(s3)+ trStr(s4);
+    if(k!=0){
+        for(int j=k;j<3;j++){
+            b3[j]=0;
+        }
+        b4[0] = (b3[0] & 0xfc) >> 2;
+        b4[1] = ((b3[0] & 0x03) << 4) | ((b3[1] & 0xf0) >> 4);
+        b4[2] = ((b3[1] & 0x0f) << 2) | ((b3[2] & 0xc0) >> 6);
+        for (int j = 0; j < k + 1; j++) {
+            encode += base64_chars[b4[j]];
+        }
+        while (k++ < 3) {
+            encode += '=';
+        }
     }
-    return ans;
+    return encode;
+}
+
+string User::decryption(const std::string &password) {
+    int len=password.length();
+    string decode;
+    int k=0,i=0,j=0;
+    char c4[4],c3[3];
+    while(len--&&password[k]!='='){
+        c4[i++]=password[k];
+        k++;
+        if(i==4){
+            for(i=0;i<4;i++){
+                c4[i]=base64_chars.find(c4[i]);
+            }
+            c3[0] =(c4[0] << 2) + ((c4[1] & 0x30) >> 4);
+            c3[1] =((c4[1] & 0xf) << 4) + ((c4[2] & 0x3c) >> 2);
+            c3[2] = ((c4[2] & 0x3) << 6) + c4[3];
+            for(i=0;i<3;i++){
+                decode+=c3[i];
+            }
+            i=0;
+        }
+    }
+    if(i){
+        for(j=i;j<4;j++){
+            c4[j]=0;
+        }
+        for(j=0;j<4;j++){
+            c4[j]=base64_chars.find(c4[j]);
+        }
+        c3[0] = (c4[0] << 2) + ((c4[1] & 0x30) >> 4);
+        c3[1] =((c4[1] & 0xf) << 4) + ((c4[2] & 0x3c) >> 2);
+        c3[2] = ((c4[2] & 0x3) << 6) + c4[3];
+        for(j=0;j<i-1;j++){
+            decode+=c3[j];
+        }
+    }
+    return decode;
 }

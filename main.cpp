@@ -115,7 +115,7 @@ int load(){
     }
     string info;
     ifstream userIn(USER_FILE_NAME);
-    if(c==1){
+    if(c=='1'){
         if(userIn){
             bool flag= false;
             string iName,iPassword;
@@ -140,7 +140,7 @@ int load(){
             }
         }
     }
-    else if(c==2){
+    else if(c=='2'){
         string iName,iPassword;
         cout<<"Please enter your name>";cin>>iName;cout<<endl;
         cout<<"Please enter your password>";cin>>iPassword;cout<<endl;
