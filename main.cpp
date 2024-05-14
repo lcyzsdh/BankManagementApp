@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <string>
 #include "user.h"
+#include <ctime>
 using namespace std;
 
 struct deleter{
@@ -105,25 +106,26 @@ bool Controller::runCommand(const string &cmdLine) {
     return false;
 }
 
-int load(){
+string load(){
     cout<<"Welcome to bank management app!!!\nchoose (1)sign in(2)sign up(e)exit >";
     string USER_FILE_NAME="user/user_list.txt";
-    char c;cin>>c;
-    while(c!='1'&&c!='2'&&c!='e'){
+    string c;cin>>c;
+    while(c!="1"&&c!="2"&&c!="e"){
         cout<<"Invalid command!"<<endl<<"Welcome to bank management app!!!\nchoose (1)sign in(2)sign up(e)exit >";
         cin>>c;
     }
     string info;
     ifstream userIn(USER_FILE_NAME);
-    if(c=='1'){
+    if(c=="1"){//登录功能
         if(userIn){
             bool flag= false;
             string iName,iPassword;
-            cin>>iName>>iPassword;
+            cout<<"Please enter your name>";cin>>iName;
+            cout<<"Please enter your password>";cin>>iPassword;
+            string name,enPassword,identity;
             while(getline(userIn,info)){
                 istringstream str(info);
-                string name,enPassword;
-                str>>name>>enPassword;
+                str>>name>>enPassword>>identity;
                 string dePassword=User::decryption(enPassword);
                 if(dePassword==iPassword&&iName==name){
                     flag=true;
@@ -131,19 +133,27 @@ int load(){
                 }
             }
             if(flag){
-                return 1;
+                if(identity=="normal"){
+                    return "N"+name;
+                }
+                else{//administrator
+                    return "A"+name;
+                }
             }
             else{
                 cout<<"Wrong user name or passsword!!"<<endl;
                 userIn.close();
                 return load();
             }
+        }else{
+            cout<<"Can't find user file!!"<<endl;
+            return "-1";
         }
     }
-    else if(c=='2'){
+    else if(c=="2"){//注册功能
         string iName,iPassword;
-        cout<<"Please enter your name>";cin>>iName;cout<<endl;
-        cout<<"Please enter your password>";cin>>iPassword;cout<<endl;
+        cout<<"Please enter your name>";cin>>iName;
+        cout<<"Please enter your password>";cin>>iPassword;
         int flag=1;
         if(userIn){
             while(getline(userIn,info)){
@@ -156,24 +166,44 @@ int load(){
                 }
             }
         }
+        else{
+            cout<<"Can't find user file!!"<<endl;
+            return "-1";
+        }
         if(flag==1){
-            cout<<"Create "<<iName<<"successfully."<<endl;
+            cout<<"Create "<<iName<<" successfully."<<endl;
             ofstream fileOut(USER_FILE_NAME,ios_base::app);
-            fileOut<<iName<<' '<<User::encryption(iPassword)<<endl;
+            fileOut<<iName<<' '<<User::encryption(iPassword)<<" normal"<<endl;
+            return "N"+iName;
         }
         else{
-            cout<<"The user has been created!"<<endl;
+            cout<<"This user has been created!"<<endl;
             return load();
         }
     }
     else{
-        return 0;
+        return "0";
     }
 }
 
-int main(){
-    load();
+void mainWork(User* iUser){
+    cout<<iUser->getInfo()[1]<<endl;
+}
 
+int main(){
+    string u=load();User* us;
+    if(u=="0"||u=="-1"){
+        return 0;
+    }
+    else if(u.find('A')==0){
+        us=new Administrator(u.substr(1));
+        //cout<<u.substr(1)<<endl;
+    }
+    else{
+        us=new NormalUser(u.substr(1));
+        //cout<<u.substr(1)<<endl;
+    }
+    mainWork(us);
     Date beginDate(2020,1,1);
     cout<<"(a)add account (d)deposit (w)withdraw (s)show (c)change day (n)next month (q)query (e)exit"<<endl;
 

@@ -5,34 +5,30 @@
 #ifndef BANKAPP_USER_H
 #define BANKAPP_USER_H
 #include<string>
+#include <vector>
 class User{
 private:
+
     std::string name;
-    std::string decryptedPassword;
-    std::string encryptedPassword;
 public:
-    User(const std::string &name,const std::string &password);
+    User(const std::string &name="");
+    virtual std::vector<std::string>& getInfo()=0;
     static std::string encryption(const std::string &password);
     static std::string decryption(const std::string &password);
+    std::string getName()const{
+        return name;
+    }
 };
 
 class NormalUser:public User{
-private:
-    int number;
 public:
-    NormalUser(const std::string &name,const std::string &password);
+    NormalUser(const std::string &name);
+    std::vector<std::string>& getInfo() override;
 };
 
 class Administrator:public User{
 public:
-    Administrator(const std::string &name,const std::string &password);
-};
-
-class InvalidUserException:public std::runtime_error{
-public:
-    InvalidUserException(int place): std::runtime_error(place==0?
-    "User name length must be between 4 to 8 characters!":
-    "User password length must be between 4 to 8 characters and includes letter and number!"){
-    }
+    Administrator(const std::string &name);
+    std::vector<std::string>& getInfo() override;
 };
 #endif //BANKAPP_USER_H

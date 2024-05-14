@@ -6,7 +6,7 @@
 #include <cmath>
 using namespace std;
 static const std::string base64_chars ="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-User::User(const std::string &name, const std::string &password) :name(name),decryptedPassword(password){
+User::User(const std::string &name) :name(name){
 }
 
 string User::encryption(const std::string &password) {
@@ -80,3 +80,19 @@ string User::decryption(const std::string &password) {
     }
     return decode;
 }
+
+vector<string>& Administrator::getInfo() {
+    vector<string> in;
+    in.emplace_back("Administrator");
+    in.emplace_back(getName());
+    return in;
+}
+vector<string>& NormalUser::getInfo() {
+    vector<string> in;
+    in.emplace_back("NormalUser");
+    in.emplace_back(getName());
+    return in;
+}
+
+NormalUser::NormalUser(const std::string &name) : User(name){}
+Administrator::Administrator(const std::string &name) : User(name){}

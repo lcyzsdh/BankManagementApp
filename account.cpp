@@ -50,7 +50,7 @@ void Account::error(const string &msg) const {
     throw AccountException(this,msg);
 }
 void Account::show(ostream &out) const {
-    out<<"#"<<id<<"   have "<<balance;
+    out<<"#"<<id<<" have "<<balance;
 }
 //SavingAccount实现
 void SavingAccount::deposit(const Date &date, double amount,const std::string &desc) {
