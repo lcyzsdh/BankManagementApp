@@ -81,14 +81,12 @@ string User::decryption(const std::string &password) {
     return decode;
 }
 
-vector<string>& Administrator::getInfo() {
-    vector<string> in;
+vector<string>& Administrator::getInfo(vector<string>& in) {
     in.emplace_back("Administrator");
     in.emplace_back(getName());
     return in;
 }
-vector<string>& NormalUser::getInfo() {
-    vector<string> in;
+vector<string>& NormalUser::getInfo(vector<string>& in) {
     in.emplace_back("NormalUser");
     in.emplace_back(getName());
     return in;

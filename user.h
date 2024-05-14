@@ -8,11 +8,10 @@
 #include <vector>
 class User{
 private:
-
     std::string name;
 public:
     User(const std::string &name="");
-    virtual std::vector<std::string>& getInfo()=0;
+    virtual std::vector<std::string>& getInfo(std::vector<std::string>& in)=0;
     static std::string encryption(const std::string &password);
     static std::string decryption(const std::string &password);
     std::string getName()const{
@@ -23,12 +22,12 @@ public:
 class NormalUser:public User{
 public:
     NormalUser(const std::string &name);
-    std::vector<std::string>& getInfo() override;
+    std::vector<std::string>& getInfo(std::vector<std::string>& in) override;
 };
 
 class Administrator:public User{
 public:
     Administrator(const std::string &name);
-    std::vector<std::string>& getInfo() override;
+    std::vector<std::string>& getInfo(std::vector<std::string>& in) override;
 };
 #endif //BANKAPP_USER_H

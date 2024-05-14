@@ -187,38 +187,27 @@ string load(){
 }
 
 void mainWork(User* iUser){
-    cout<<iUser->getInfo()[1]<<endl;
-}
+    vector<string> iInfo;
+    cout << "Welcome back: "<<iUser->getInfo(iInfo)[1] << endl;
 
-int main(){
-    string u=load();User* us;
-    if(u=="0"||u=="-1"){
-        return 0;
-    }
-    else if(u.find('A')==0){
-        us=new Administrator(u.substr(1));
-        //cout<<u.substr(1)<<endl;
-    }
-    else{
-        us=new NormalUser(u.substr(1));
-        //cout<<u.substr(1)<<endl;
-    }
-    mainWork(us);
     Date beginDate(2020,1,1);
     cout<<"(a)add account (d)deposit (w)withdraw (s)show (c)change day (n)next month (q)query (e)exit"<<endl;
 
     Controller controller(beginDate);
     string cmdLine;
-    const char *FILE_NAME="commands.txt";
+
+    string FILE_NAME= "user/" + iInfo[1] + "/commands.txt";
     ifstream fileIn(FILE_NAME);
     if(fileIn){
         while(getline(fileIn,cmdLine)){
             try {
-                controller.runCommand(cmdLine);
+                if(!cmdLine.empty()){
+                    controller.runCommand(cmdLine);
+                }
             }catch (exception &e){
                 cout<<"Bad line in"<<FILE_NAME<<":"<<cmdLine<<endl;
                 cout<<"Error: "<<e.what()<<endl;
-                return 1;
+                //return 1;
             }
         }
         fileIn.close();
@@ -230,8 +219,10 @@ int main(){
         string cmd;
         getline(cin,cmd);
         try{
-            if(controller.runCommand(cmd)){
-                fileOut<<cmd<<endl;
+            if(!cmd.empty()){
+                if(controller.runCommand(cmd)){
+                    fileOut<<cmd<<endl;
+                }
             }
         } catch (AccountException &e) {
             cout<<"Error(#"<<e.getAccount()->getId()<<"):"<<e.what()<<endl;
@@ -239,5 +230,20 @@ int main(){
             cout << "Error: " << e.what() << endl;
         }
     }
+    fileOut.close();
+}
+
+int main(){
+    string u=load();User* us;
+    if(u=="0"||u=="-1"){
+        return 0;
+    }
+    else if(u.find('A')==0){
+        us=new Administrator(u.substr(1));
+    }
+    else{
+        us=new NormalUser(u.substr(1));
+    }
+    mainWork(us);
     return 0;
 }
