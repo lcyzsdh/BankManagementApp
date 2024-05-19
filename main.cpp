@@ -10,8 +10,9 @@
 #include <string>
 #include "user.h"
 #include <ctime>
+#include <cstdlib>
 using namespace std;
-
+using namespace std::rel_ops;
 struct deleter{
     template<class T>void operator()(T* p){delete p;}
 };
@@ -20,9 +21,23 @@ class Controller{
 private:
     Date date;
     vector<Account *> accounts;
+    vector<FinancialManagement*> fmList;
     bool end;
 public:
-    Controller(const Date &date): date(date),end(false){}
+    Controller(const Date &date): date(date),end(false){
+        ifstream fileIn("fmList.txt");string info;FinancialManagement* fm;
+        if(fileIn){
+            while(getline(fileIn,info)){
+                istringstream ss(info);
+                string name,y1,m1,d1,y2,m2,d2,rate,la,risk;
+                ss>>name>>y1>>m1>>d1>>y2>>m2>>d2>>rate>>la>>risk;
+                Date begin(stoi(y1),stoi(m1),stoi(d1));Date end(stoi(y2),stoi(m2),stoi(d2));
+                fm=new FinancialManagement(name,begin,end, stod(rate), stod(la), stod(risk));
+                fmList.push_back(fm);
+            }
+            fileIn.close();
+        }
+    }
     ~Controller();
     const Date &getDate()const{return date;}
     bool isEnd()const{return end;}
@@ -34,9 +49,9 @@ Controller::~Controller() {
 bool Controller::runCommand(const string &cmdLine) {
     istringstream str(cmdLine);
     char cmd,type;
-    int index,day;
+    int index,day,bk=0,bnum;
     double amount,credit,rate,fee;
-    string id,desc;
+    string id,desc,cms;
     Account *account;
     Date date1,date2;
     str>>cmd;
@@ -70,6 +85,26 @@ bool Controller::runCommand(const string &cmdLine) {
                 cout<<endl;
             }
             return false;
+        case 'b':
+            cout<<"These are the financial management list you can buy:"<<endl;
+            for (int i = 0; i < fmList.size(); ++i) {
+                if(fmList[i]->getBeginDate()>date){
+                    cout<<"("<<i+1<<") ";fmList[i]->show();bk++;
+                }
+            }
+            cout<<"buy(enter the number) or return r>";cin>>cms;
+            if(cms=="r"){
+                return false;
+            }else{
+                bnum= stoi(cms);
+                if(bnum>bk){
+                    cout<<"The fm isn't existing."<<endl;
+                    return false;
+                }
+                else{
+                    account[0].withdraw(date,100,"buy fm");//TODO:correct the real command,using withdraw(desc)to buy a fm
+                }
+            }
         case 'c':
             str>>day;
             if(day<date.getDay()){
@@ -108,7 +143,7 @@ bool Controller::runCommand(const string &cmdLine) {
 
 string load(){
     cout<<"Welcome to bank management app!!!\nchoose (1)sign in(2)sign up(e)exit >";
-    string USER_FILE_NAME="user/user_list.txt";
+    string USER_FILE_NAME="user_list.txt";
     string c;cin>>c;
     while(c!="1"&&c!="2"&&c!="e"){
         cout<<"Invalid command!"<<endl<<"Welcome to bank management app!!!\nchoose (1)sign in(2)sign up(e)exit >";
@@ -191,12 +226,12 @@ void mainWork(User* iUser){
     cout << "Welcome back: "<<iUser->getInfo(iInfo)[1] << endl;
 
     Date beginDate(2020,1,1);
-    cout<<"(a)add account (d)deposit (w)withdraw (s)show (c)change day (n)next month (q)query (e)exit"<<endl;
+    cout<<"(a)add account (d)deposit (w)withdraw (s)show (b)buy financial management (c)change day (n)next month (q)query (e)exit"<<endl;
 
     Controller controller(beginDate);
     string cmdLine;
 
-    string FILE_NAME= "user/" + iInfo[1] + "/commands.txt";
+    string FILE_NAME=  iInfo[1] + "_commands.txt";
     ifstream fileIn(FILE_NAME);
     if(fileIn){
         while(getline(fileIn,cmdLine)){
@@ -213,16 +248,23 @@ void mainWork(User* iUser){
         fileIn.close();
     }
     ofstream fileOut(FILE_NAME,ios_base::app);
-    cout<<"(a)add account (d)deposit (w)withdraw (s)show (c)change day (n)next month (q)query (e)exit"<<endl;
+    //cout<<"(a)add account (d)deposit (w)withdraw (s)show (c)change day (n)next month (q)query (e)exit"<<endl;
+    bool flag=true;
     while(!controller.isEnd()){
-        cout<<controller.getDate()<<"\tTotal: "<<Account::getTotal()<<"\tcommand>";
+        if(flag){
+            cout<<controller.getDate()<<"\tTotal: "<<Account::getTotal()<<"\tcommand>";
+        }
         string cmd;
         getline(cin,cmd);
         try{
             if(!cmd.empty()){
+                flag= true;
                 if(controller.runCommand(cmd)){
                     fileOut<<cmd<<endl;
                 }
+            }
+            else{
+                flag= false;
             }
         } catch (AccountException &e) {
             cout<<"Error(#"<<e.getAccount()->getId()<<"):"<<e.what()<<endl;
@@ -234,6 +276,7 @@ void mainWork(User* iUser){
 }
 
 int main(){
+    srand(time(nullptr));
     string u=load();User* us;
     if(u=="0"||u=="-1"){
         return 0;

@@ -9,6 +9,8 @@
 #include <string>
 #include <map>
 #include <istream>
+#include "FinancialManagement.h"
+#include<utility>
 using namespace std;
 enum class Activity{DEPOSIT,WITHDRAW};
 class Account;
@@ -33,7 +35,6 @@ private:
 protected:
     Account(const Date &date, const string &id);
     void record(Activity activity,const Date &date,double amount,const std::string &desc);
-    void error(const std::string &msg) const;
 public:
     const string &getId()const{return id;}
     double getBalance() const {
@@ -93,6 +94,19 @@ public:
             return credit;
         }
     }
+    void deposit(const Date &date,double amount,const std::string &desc) override;
+    void withdraw(const Date &date,double amount,const std::string &desc)override;
+    void settle(const Date &date)override;
+    void show(ostream &out)const override;
+};
+
+class FinancialAccount:public Account{
+private:
+    vector<pair<FinancialManagement,double>> FinancialList;
+    double highRisk;
+public:
+    FinancialAccount(const Date &date,const string &id,double highRisk);
+    int buy(FinancialManagement &item,double am);
     void deposit(const Date &date,double amount,const std::string &desc) override;
     void withdraw(const Date &date,double amount,const std::string &desc)override;
     void settle(const Date &date)override;

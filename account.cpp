@@ -46,9 +46,6 @@ void Account::record(Activity activity,const Date &date,double amount,const std:
     }
     recordMap.insert(make_pair(date, AccountRecord(date,this,amount,balance,desc)));//对每笔记录
 }
-void Account::error(const string &msg) const {
-    throw AccountException(this,msg);
-}
 void Account::show(ostream &out) const {
     out<<"#"<<id<<" have "<<balance;
 }
@@ -94,4 +91,48 @@ void CreditAccount::settle(const Date &date) {
 void CreditAccount::show(ostream &out) const {
     Account::show(out);
     cout<<"\tAvailable credit: "<<getAvailableCredit();
+}
+
+FinancialAccount::FinancialAccount(const Date &date, const string &id, double highRisk) : Account(date,id),highRisk(highRisk){
+}
+
+int FinancialAccount::buy(FinancialManagement &item,double am) {
+    if(item.getRisk()<highRisk){
+        return 0;
+    }
+    else{
+        FinancialList.push_back(make_pair(item,am));
+        return 1;
+    }
+}
+
+void FinancialAccount::deposit(const Date &date, double amount, const string &desc) {
+    record(Activity::DEPOSIT,date,amount,desc);
+}
+
+void FinancialAccount::withdraw(const Date &date, double amount, const string &desc) {
+    record(Activity::WITHDRAW,date,amount,desc);
+}
+
+void FinancialAccount::settle(const Date &date) {
+    double interest=0;
+for(int i=0;i<FinancialList.size();i++){
+    if(FinancialList[i].first.getEndDate()<=date){
+        interest=FinancialList[i].first.settle(FinancialList[i].second);
+        FinancialList[i].second=0;
+        record(Activity::DEPOSIT,date,interest,FinancialList[i].first.getDesc()+"'s interest");
+    }
+}
+}
+
+void FinancialAccount::show(ostream &out) const {
+    Account::show(out);
+    int k=0;double ans=0;
+    for(int i=0;i<FinancialList.size();i++){
+        if(FinancialList[i].second!=0){
+            k++;
+            ans+=FinancialList[i].first.settle(FinancialList[i].second);
+        }
+    }
+    out<<"You all have "<<k<<"Financial Management(s).The Expected interest is "<<ans<<endl;
 }

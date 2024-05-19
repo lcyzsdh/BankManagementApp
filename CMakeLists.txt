@@ -10,4 +10,7 @@ add_executable(BankApp account.cpp
         main.cpp
         accumulator.h
         user.h
-        user.cpp)
+        user.cpp
+        Analysis.cpp
+        Analysis.h
+        FinancialManagement.h)

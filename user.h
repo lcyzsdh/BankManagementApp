@@ -6,9 +6,13 @@
 #define BANKAPP_USER_H
 #include<string>
 #include <vector>
+enum State{
+    NORMAL,ICED
+};
 class User{
 private:
     std::string name;
+    State nState;
 public:
     User(const std::string &name="");
     virtual std::vector<std::string>& getInfo(std::vector<std::string>& in)=0;
