@@ -34,4 +34,9 @@ public:
     Administrator(const std::string &name);
     std::vector<std::string>& getInfo(std::vector<std::string>& in) override;
 };
+class VIPUser:public User{
+public:
+    VIPUser(const std::string &name);
+    std::vector<std::string>& getInfo(std::vector<std::string>& in) override;
+};
 #endif //BANKAPP_USER_H

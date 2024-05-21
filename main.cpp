@@ -45,12 +45,13 @@ public:
 };
 Controller::~Controller() {
     for_each(accounts.begin(),accounts.end(),deleter());
+    for_each(fmList.begin(),fmList.end(),deleter());
 }
 bool Controller::runCommand(const string &cmdLine) {
     istringstream str(cmdLine);
     char cmd,type;
-    int index,day,bk=0,bnum;
-    double amount,credit,rate,fee;
+    int index,day,bk=0,bnum,destID,fromID;
+    double amount,credit,rate,fee,realAmount;
     string id,desc,cms;
     Account *account;
     Date date1,date2;
@@ -133,6 +134,18 @@ bool Controller::runCommand(const string &cmdLine) {
             str>>date1>>date2;
             Account::query(date1,date2);
             return false;
+        case 'z':
+            str>>fromID>>destID>>amount;
+            realAmount=amount+amount*0.05;//手续费
+            if(accounts[fromID]->getBalance()<amount){
+                cout<<"Unable to exchange!"<<endl;
+                return false;
+            }
+            else{
+                accounts[fromID]->withdraw(date,amount,"exchange to another account");
+                accounts[destID]->deposit(date,amount,"get exchange");
+                return true;
+            }
         case 'e':
             end=true;
             return false;
@@ -141,7 +154,10 @@ bool Controller::runCommand(const string &cmdLine) {
     return false;
 }
 
-string load(){
+string load(int num){
+    if(num==3){
+        return "-2";
+    }
     cout<<"Welcome to bank management app!!!\nchoose (1)sign in(2)sign up(e)exit >";
     string USER_FILE_NAME="user_list.txt";
     string c;cin>>c;
@@ -178,7 +194,7 @@ string load(){
             else{
                 cout<<"Wrong user name or passsword!!"<<endl;
                 userIn.close();
-                return load();
+                return load(++num);
             }
         }else{
             cout<<"Can't find user file!!"<<endl;
@@ -213,7 +229,7 @@ string load(){
         }
         else{
             cout<<"This user has been created!"<<endl;
-            return load();
+            return load(num);
         }
     }
     else{
@@ -226,7 +242,7 @@ void mainWork(User* iUser){
     cout << "Welcome back: "<<iUser->getInfo(iInfo)[1] << endl;
 
     Date beginDate(2020,1,1);
-    cout<<"(a)add account (d)deposit (w)withdraw (s)show (b)buy financial management (c)change day (n)next month (q)query (e)exit"<<endl;
+    cout<<"(a)add account (d)deposit (w)withdraw (s)show (b)buy financial management (c)change day (n)next month (q)query (z)exchange (e)exit"<<endl;
 
     Controller controller(beginDate);
     string cmdLine;
@@ -277,8 +293,12 @@ void mainWork(User* iUser){
 
 int main(){
     srand(time(nullptr));
-    string u=load();User* us;
-    if(u=="0"||u=="-1"){
+    string u=load(0);User* us;
+    if(u=="-2"){
+        cout<<"You have tried over three times!!To protect your safety,this program exits.";
+        return 0;
+    }
+    else if(u=="0"||u=="-1"){
         return 0;
     }
     else if(u.find('A')==0){

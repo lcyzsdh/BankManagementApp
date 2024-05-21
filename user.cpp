@@ -94,3 +94,12 @@ vector<string>& NormalUser::getInfo(vector<string>& in) {
 
 NormalUser::NormalUser(const std::string &name) : User(name){}
 Administrator::Administrator(const std::string &name) : User(name){}
+
+std::vector<std::string> &VIPUser::getInfo(vector<std::string> &in) {
+    in.emplace_back("VIPUser");
+    in.emplace_back(getName());
+    return in;
+}
+
+VIPUser::VIPUser(const string &name) : User(name){
+}
