@@ -136,3 +136,7 @@ void FinancialAccount::show(ostream &out) const {
     }
     out<<"You all have "<<k<<"Financial Management(s).The Expected interest is "<<ans<<endl;
 }
+
+void FinancialAccount::work() {
+
+}

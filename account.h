@@ -47,6 +47,7 @@ public:
     virtual void withdraw(const Date &date,double amount,const std::string &desc)=0;
     virtual void settle(const Date &date)=0;
     virtual void show(std::ostream &out)const;
+    virtual void work()=0;
     static void query(const Date& begin,const Date& end);//查询时间
 };
 inline ostream & operator<< (ostream &out,const Account &account){
@@ -65,6 +66,7 @@ public:
     void deposit(const Date &date,double amount,const std::string &desc) override ;
     void withdraw(const Date &date,double amount,const std::string &desc) override;
     void settle(const Date &date) override;
+    void work()override;
 };
 
 class CreditAccount:public Account{
@@ -98,15 +100,17 @@ public:
     void withdraw(const Date &date,double amount,const std::string &desc)override;
     void settle(const Date &date)override;
     void show(ostream &out)const override;
+    void work()override;
 };
 
 class FinancialAccount:public Account{
 private:
     vector<pair<FinancialManagement,double>> FinancialList;
     double highRisk;
+    int buy(FinancialManagement &item,double am);
 public:
     FinancialAccount(const Date &date,const string &id,double highRisk);
-    int buy(FinancialManagement &item,double am);
+    void work()override;
     void deposit(const Date &date,double amount,const std::string &desc) override;
     void withdraw(const Date &date,double amount,const std::string &desc)override;
     void settle(const Date &date)override;
