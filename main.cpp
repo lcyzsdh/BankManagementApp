@@ -11,11 +11,39 @@
 #include "user.h"
 #include <ctime>
 #include <cstdlib>
+#include "db/sqlite3.h"
+#include<cstdio>
+#include "OutputUtils.h"
 using namespace std;
 using namespace std::rel_ops;
-struct deleter{
-    template<class T>void operator()(T* p){delete p;}
-};
+extern void welcome();
+static int callback(void *NotUsed, int argc, char **argv, char **azColName){
+    int i;
+    for(i=0; i<argc; i++){
+        printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    }
+    printf("\n");
+    return 0;
+}
+
+// 查询数据
+string QueryData(string s1,string s2,sqlite3* db) {
+    const char* queryDataSQL = "SELECT * FROM USER;";
+    sqlite3_stmt* statement;
+    if (sqlite3_prepare_v2(db, queryDataSQL, -1, &statement, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(statement) == SQLITE_ROW) {
+            string t1(reinterpret_cast<const char*>(sqlite3_column_text(statement,0)));
+            string t2(reinterpret_cast<const char*>(sqlite3_column_text(statement,1)));
+            if(t1==s1&&
+                    t2==s2){
+                string t3(reinterpret_cast<const char*>(sqlite3_column_text(statement,2)));
+                return t3;
+            }
+        }
+        sqlite3_finalize(statement);
+        return "-1";
+    }
+}
 
 class Controller{
 private:
@@ -44,8 +72,6 @@ public:
     bool runCommand(const string &cmdLine);
 };
 Controller::~Controller() {
-    for_each(accounts.begin(),accounts.end(),deleter());
-    for_each(fmList.begin(),fmList.end(),deleter());
 }
 bool Controller::runCommand(const string &cmdLine) {
     istringstream str(cmdLine);
@@ -154,82 +180,50 @@ bool Controller::runCommand(const string &cmdLine) {
     return false;
 }
 
-string load(int num){
+string load(int num,sqlite3* db){
+
     if(num==3){
         return "-2";
     }
-    cout<<"Welcome to bank management app!!!\nchoose (1)sign in(2)sign up(e)exit >";
+    welcome();
     string USER_FILE_NAME="user_list.txt";
     string c;cin>>c;
     while(c!="1"&&c!="2"&&c!="e"){
-        cout<<"Invalid command!"<<endl<<"Welcome to bank management app!!!\nchoose (1)sign in(2)sign up(e)exit >";
+        cout<<"非法的操作符，请重新输入！！"<<endl;
+        welcome();
         cin>>c;
     }
     string info;
-    ifstream userIn(USER_FILE_NAME);
+
     if(c=="1"){//登录功能
-        if(userIn){
-            bool flag= false;
             string iName,iPassword;
-            cout<<"Please enter your name>";cin>>iName;
-            cout<<"Please enter your password>";cin>>iPassword;
-            string name,enPassword,identity;
-            while(getline(userIn,info)){
-                istringstream str(info);
-                str>>name>>enPassword>>identity;
-                string dePassword=User::decryption(enPassword);
-                if(dePassword==iPassword&&iName==name){
-                    flag=true;
-                    break;
-                }
-            }
-            if(flag){
-                if(identity=="normal"){
-                    return "N"+name;
-                }
-                else{//administrator
-                    return "A"+name;
-                }
+            cout<<"请输入账号名称>>";cin>>iName;
+            cout<<"请输入账号密码>>";cin>>iPassword;
+            string re= QueryData(iName,iPassword,db);
+            if(re!="-1"){
+                return re[0]+iName;
             }
             else{
-                cout<<"Wrong user name or passsword!!"<<endl;
-                userIn.close();
-                return load(++num);
+                cout<<"账号或密码有误！"<<endl;
+                return load(++num,db);
             }
-        }else{
-            cout<<"Can't find user file!!"<<endl;
-            return "-1";
-        }
     }
     else if(c=="2"){//注册功能
         string iName,iPassword;
-        cout<<"Please enter your name>";cin>>iName;
-        cout<<"Please enter your password>";cin>>iPassword;
-        int flag=1;
-        if(userIn){
-            while(getline(userIn,info)){
-                istringstream str(info);
-                string name,enPassword;
-                str>>name>>enPassword;
-                if(iName==name){
-                    flag=0;
-                    break;
-                }
-            }
-        }
-        else{
-            cout<<"Can't find user file!!"<<endl;
-            return "-1";
-        }
-        if(flag==1){
-            cout<<"Create "<<iName<<" successfully."<<endl;
-            ofstream fileOut(USER_FILE_NAME,ios_base::app);
-            fileOut<<iName<<' '<<User::encryption(iPassword)<<" normal"<<endl;
+        cout<<"请输入您要注册的账号名称>>";cin>>iName;
+        cout<<"请输入您的密码>>";cin>>iPassword;
+
+        if(QueryData(iName,iPassword,db)=="-1"){
+            cout<<"创建 "<<iName<<" 账户成功！"<<endl;
+            char* msg= nullptr;
+            string sql="INSERT INTO USER (NAME,PASSWORD,IDENTITY)"\
+    "VALUES('"+iName+"','"+iPassword+"','Normal');";
+            sqlite3_exec(db,sql.c_str(), callback, nullptr, &msg);
             return "N"+iName;
         }
         else{
-            cout<<"This user has been created!"<<endl;
-            return load(num);
+            cout<<"当前账户已经被注册，请重试！"<<endl;
+            return load(num,db);
         }
     }
     else{
@@ -292,10 +286,28 @@ void mainWork(User* iUser){
 }
 
 int main(){
+
+    //数据库连接操作
+    sqlite3 *db;char* msg= nullptr;
+    int rc;
+    rc = sqlite3_open("user_list.sqlite", &db);
+    char *user_table= "CREATE TABLE USER("  \
+         "NAME TEXT PRIMARY KEY  NOT NULL," \
+         "PASSWORD       TEXT     NOT NULL," \
+         "IDENTITY         TEXT   NOT NULL,"\
+         "STARS INT);";
+    //创建示例用户
+    rc=sqlite3_exec(db,user_table, callback, nullptr, &msg);
+
+    rc=sqlite3_exec(db,"INSERT INTO USER (NAME,PASSWORD,IDENTITY)"\
+    "VALUES('lcyzsdh',2613,'Normal');", callback, nullptr, &msg);
+    rc=sqlite3_exec(db,"INSERT INTO USER (NAME,PASSWORD,IDENTITY)"\
+    "VALUES('ad',333,'Administrator');", callback, nullptr, &msg);
+
     srand(time(nullptr));
-    string u=load(0);User* us;
+    string u=load(0,db);User* us;
     if(u=="-2"){
-        cout<<"You have tried over three times!!To protect your safety,this program exits.";
+        cout<<"您尝试3次账号或密码有误，为保护用户安全，程序将自动退出。";
         return 0;
     }
     else if(u=="0"||u=="-1"){
@@ -308,5 +320,6 @@ int main(){
         us=new NormalUser(u.substr(1));
     }
     mainWork(us);
+    sqlite3_close(db);
     return 0;
 }
