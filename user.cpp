@@ -93,8 +93,17 @@ vector<string>& NormalUser::getInfo(vector<string>& in) {
 }
 
 NormalUser::NormalUser(const std::string &name) : User(name){}
+bool NormalUser::isVIP() { return false; }
+bool NormalUser::isAdmin() {
+    return false;
+}
+
 Administrator::Administrator(const std::string &name) : User(name){}
 
+bool Administrator::isAdmin() {
+    return true;
+}
+bool Administrator::isVIP() { return false; }
 std::vector<std::string> &VIPUser::getInfo(vector<std::string> &in) {
     in.emplace_back("VIPUser");
     in.emplace_back(getName());
@@ -103,3 +112,8 @@ std::vector<std::string> &VIPUser::getInfo(vector<std::string> &in) {
 
 VIPUser::VIPUser(const string &name) : User(name){
 }
+
+bool VIPUser::isAdmin() {
+    return false;
+}
+bool VIPUser::isVIP() { return true; }

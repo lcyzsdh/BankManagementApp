@@ -25,6 +25,9 @@ public:
     bool operator< (const Date& date)const{
         return totalDays<date.totalDays;
     }
+    std::string getFDate(){
+        return std::to_string(getYear())+' '+std::to_string(getMonth())+' '+std::to_string(getDay());
+    }
 };
 std::istream & operator>> (std::istream &in,Date &date);
 std::ostream & operator<< (std::ostream &out,const Date &date);

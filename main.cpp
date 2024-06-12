@@ -14,13 +14,24 @@
 #include "db/sqlite3.h"
 #include<cstdio>
 #include "OutputUtils.h"
+#include<map>
 using namespace std;
 using namespace std::rel_ops;
-extern void welcome();
+
 static int callback(void *NotUsed, int argc, char **argv, char **azColName){
     int i;
     for(i=0; i<argc; i++){
         printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    }
+    printf("\n");
+    return 0;
+}
+int fmlen=0;
+static int searchFM(void *NotUsed, int argc, char **argv, char **azColName){
+    int i;
+    for(i=0; i<argc; i++){
+        fmlen++;
+        printf("|  %s  |",  argv[i] ? argv[i] : "NULL");
     }
     printf("\n");
     return 0;
@@ -44,101 +55,147 @@ string QueryData(string s1,string s2,sqlite3* db) {
         return "-1";
     }
 }
+FinancialManagement QueryFM(int k,sqlite3* db) {
+    const char* queryDataSQL = "SELECT * FROM FM;";int kt=0;
+    sqlite3_stmt* statement;
+    if (sqlite3_prepare_v2(db, queryDataSQL, -1, &statement, nullptr) == SQLITE_OK) {
+        while (sqlite3_step(statement) == SQLITE_ROW) {
+            kt++;
+            if(kt==k){
+                string id(reinterpret_cast<const char*>(sqlite3_column_text(statement,0)));
+                string begin(reinterpret_cast<const char*>(sqlite3_column_text(statement,1)));
+                string end(reinterpret_cast<const char*>(sqlite3_column_text(statement,2)));
+                double rate=sqlite3_column_double(statement,3);
+                double risk=sqlite3_column_double(statement,4);
+                double least=sqlite3_column_double(statement,5);
+                stringstream ss(begin);int y,m,d;ss>>y>>m>>d;Date dbe(y,m,d);
+                stringstream s2(end);s2>>y>>m>>d;Date den(y,m,d);
+                FinancialManagement fm(id,dbe,den,rate,least,risk);
+                sqlite3_finalize(statement);
+                return fm;
+            }
 
+        }
+
+    }
+}
 class Controller{
 private:
     Date date;
-    vector<Account *> accounts;
-    vector<FinancialManagement*> fmList;
+
+    map<string,Account*> accounts;
     bool end;
 public:
     Controller(const Date &date): date(date),end(false){
-        ifstream fileIn("fmList.txt");string info;FinancialManagement* fm;
-        if(fileIn){
-            while(getline(fileIn,info)){
-                istringstream ss(info);
-                string name,y1,m1,d1,y2,m2,d2,rate,la,risk;
-                ss>>name>>y1>>m1>>d1>>y2>>m2>>d2>>rate>>la>>risk;
-                Date begin(stoi(y1),stoi(m1),stoi(d1));Date end(stoi(y2),stoi(m2),stoi(d2));
-                fm=new FinancialManagement(name,begin,end, stod(rate), stod(la), stod(risk));
-                fmList.push_back(fm);
-            }
-            fileIn.close();
-        }
     }
     ~Controller();
     const Date &getDate()const{return date;}
     bool isEnd()const{return end;}
-    bool runCommand(const string &cmdLine);
+    bool runCommand(const string &cmdLine,sqlite3* db,User* iUser);
+    void buyFM(const string &cmdLine,sqlite3* db,User* iUser,ofstream& fileout);
 };
 Controller::~Controller() {
 }
-bool Controller::runCommand(const string &cmdLine) {
+void Controller::buyFM(const std::string &cmdLine, sqlite3 *db, User *iUser,ofstream& fileout) {
+    string cms;int bnum;double amount;
+    cout<<"-------------以下列出可以购买的理财：------------"<<endl;char* msg;
+    cout<<"| 名称 ｜ 开始时间 ｜ 结束时间 ｜ 利率 ｜ 最低购买额 ｜ 风险度 ｜"<<endl;
+    sqlite3_exec(db,"SELECT * FROM FM",searchFM, nullptr,&msg);
+    cout<<"请输入要购买的理财编号(输入 -1 退出)>>";cin>>cms;
+    if(cms=="-1"){
+        return;
+    }else{
+        cout<<"请输入购买此理财的金额>>";
+        cin>>amount;
+        bnum= stoi(cms);
+        if(bnum>(fmlen/6)){
+            cout<<"当前编号不存在！"<<endl;
+            return;
+        }
+        else{
+            bool flag= false;
+            for(const auto &i:accounts){
+                if(i.second->isFMAccount()){
+                    if(i.second->buyFM(QueryFM(bnum, db), amount)){
+                        i.second->withdraw(date,amount,"buy");
+                        cout<<"购买理财成功！"<<endl;
+                        fileout<<"k "<<i.second->getId()<<" "<<amount<<" fm"+cms<<endl;
+
+                    }else{
+                        cout<<"购买失败，请确认您的购买金额超过最低购买金额，并且账户最高可承受风险高于理财风险!"<<endl;
+                    }
+                    flag=true;
+                    return;
+                }
+            }
+            if(!flag){cout<<"请先建立一个理财账户！"<<endl;}
+            return;
+        }
+    }
+}
+bool Controller::runCommand(const string &cmdLine,sqlite3* db,User* iUser) {
     istringstream str(cmdLine);
+    bool flag= false;map<string ,Account*>::iterator iter;
     char cmd,type;
-    int index,day,bk=0,bnum,destID,fromID;
-    double amount,credit,rate,fee,realAmount;
-    string id,desc,cms;
+    int index,day,bk=0,bnum,kk=0;
+    double amount,credit,rate,fee,realAmount,risk;
+    string id,desc,destID,fromID,cms;
     Account *account;
     Date date1,date2;
     str>>cmd;
     switch (cmd) {
         case 'a':
             str>>type>>id;
+            for(iter=accounts.begin();iter!=accounts.end();iter++){
+                if(iter->first==id){
+                    cout<<"您要创建的账户已存在！"<<endl;
+                    return false;
+                }
+            }
             if(type=='s'){
                 str>>rate;
                 account=new SavingAccount(date,id,rate);
             }
-            else{
+            else if(type=='c'){
                 str>>credit>>rate>>fee;
                 account=new CreditAccount(date,id,credit,rate,fee);
+            }else{
+                str>>risk;
+                account=new FinancialAccount(date,id,risk);
             }
-            accounts.push_back(account);
+            accounts.insert(make_pair(account->getId(),account));
             return true;
         case 'd':
-            str>>index>>amount;
+            str>>id>>amount;
             getline(str,desc);
-            accounts[index]->deposit(date,amount,desc);
+            accounts[id]->deposit(date,amount,desc);
             return true;
+        case 'k':
+            str>>id>>amount;
+            getline(str,desc);
+            bnum=stoi(desc.substr(3));
+            accounts[id]->withdraw(date,amount,desc);
+            accounts[id]->buyFM(QueryFM(bnum,db),amount);
+            return false;
         case 'w':
-            str>>index>>amount;
+            str>>id>>amount;
             getline(str,desc);
-            accounts[index]->withdraw(date,amount,desc);
+            if(accounts[id]->withdraw(date,amount,desc))
             return true;
+            else return false;
         case 's':
-            for(int i=0;i<accounts.size();i++){
-                cout<<"["<<i<<']';
-                accounts[i]->show(cout);
-                cout<<endl;
+            cout<<"--------"<<"下面是您目前账号的所有资产状况：--------------"<<endl;
+            for(const auto &i:accounts){
+                cout<<"["<<++kk<<']';i.second->show(cout);cout<<endl;
             }
             return false;
-        case 'b':
-            cout<<"These are the financial management list you can buy:"<<endl;
-            for (int i = 0; i < fmList.size(); ++i) {
-                if(fmList[i]->getBeginDate()>date){
-                    cout<<"("<<i+1<<") ";fmList[i]->show();bk++;
-                }
-            }
-            cout<<"buy(enter the number) or return r>";cin>>cms;
-            if(cms=="r"){
-                return false;
-            }else{
-                bnum= stoi(cms);
-                if(bnum>bk){
-                    cout<<"The fm isn't existing."<<endl;
-                    return false;
-                }
-                else{
-                    account[0].withdraw(date,100,"buy fm");//TODO:correct the real command,using withdraw(desc)to buy a fm
-                }
-            }
         case 'c':
             str>>day;
             if(day<date.getDay()){
-                cout<<"You cannot specify a previous day";
+                cout<<"你不能指定之前的日期！";
                 return false;
             } else if(day>date.getMonthDay()){
-                cout<<"Invalid day";
+                cout<<"非法的日期！";
                 return false;
             }
             else{
@@ -153,7 +210,7 @@ bool Controller::runCommand(const string &cmdLine) {
                 date=Date(date.getYear(),date.getMonth()+1,1);
             }
             for(auto &paccount:accounts){
-                paccount->settle(date);
+                paccount.second->settle(date);
             }
             return true;
         case 'q':
@@ -162,13 +219,17 @@ bool Controller::runCommand(const string &cmdLine) {
             return false;
         case 'z':
             str>>fromID>>destID>>amount;
-            realAmount=amount+amount*0.05;//手续费
-            if(accounts[fromID]->getBalance()<amount){
-                cout<<"Unable to exchange!"<<endl;
+            if(iUser->isVIP()){
+                realAmount=amount;
+            }else{
+                realAmount=amount+amount*0.05;//手续费
+            }
+            if(accounts[fromID]->getBalance()<realAmount){
+                cout<<"无法转账！"<<endl;
                 return false;
             }
             else{
-                accounts[fromID]->withdraw(date,amount,"exchange to another account");
+                accounts[fromID]->withdraw(date,realAmount,"exchange to another account");
                 accounts[destID]->deposit(date,amount,"get exchange");
                 return true;
             }
@@ -176,7 +237,7 @@ bool Controller::runCommand(const string &cmdLine) {
             end=true;
             return false;
     }
-    cout<<"Invalid command: "<<cmdLine<<endl;
+    cout<<"非法的操作符: "<<cmdLine<<endl;
     return false;
 }
 
@@ -184,7 +245,7 @@ string load(int num,sqlite3* db){
 
     if(num==3){
         return "-2";
-    }
+    }//三次尝试错误退出
     welcome();
     string USER_FILE_NAME="user_list.txt";
     string c;cin>>c;
@@ -193,13 +254,12 @@ string load(int num,sqlite3* db){
         welcome();
         cin>>c;
     }
-    string info;
 
     if(c=="1"){//登录功能
             string iName,iPassword;
             cout<<"请输入账号名称>>";cin>>iName;
             cout<<"请输入账号密码>>";cin>>iPassword;
-            string re= QueryData(iName,iPassword,db);
+            string re= QueryData(iName,User::encryption(iPassword),db);
             if(re!="-1"){
                 return re[0]+iName;
             }
@@ -213,11 +273,11 @@ string load(int num,sqlite3* db){
         cout<<"请输入您要注册的账号名称>>";cin>>iName;
         cout<<"请输入您的密码>>";cin>>iPassword;
 
-        if(QueryData(iName,iPassword,db)=="-1"){
+        if(QueryData(iName,User::encryption(iPassword),db)=="-1"){
             cout<<"创建 "<<iName<<" 账户成功！"<<endl;
             char* msg= nullptr;
             string sql="INSERT INTO USER (NAME,PASSWORD,IDENTITY)"\
-    "VALUES('"+iName+"','"+iPassword+"','Normal');";
+    "VALUES('"+iName+"','"+User::encryption(iPassword)+"','Normal');";
             sqlite3_exec(db,sql.c_str(), callback, nullptr, &msg);
             return "N"+iName;
         }
@@ -231,12 +291,12 @@ string load(int num,sqlite3* db){
     }
 }
 
-void mainWork(User* iUser){
+void mainWork(User* iUser,sqlite3* db){
     vector<string> iInfo;
-    cout << "Welcome back: "<<iUser->getInfo(iInfo)[1] << endl;
+    cout << "------------欢迎回来: "<<iUser->getInfo(iInfo)[1] <<' '<<iInfo[0]<<"---------------"<< endl;
 
     Date beginDate(2020,1,1);
-    cout<<"(a)add account (d)deposit (w)withdraw (s)show (b)buy financial management (c)change day (n)next month (q)query (z)exchange (e)exit"<<endl;
+    UserScreen();
 
     Controller controller(beginDate);
     string cmdLine;
@@ -247,12 +307,12 @@ void mainWork(User* iUser){
         while(getline(fileIn,cmdLine)){
             try {
                 if(!cmdLine.empty()){
-                    controller.runCommand(cmdLine);
+                    controller.runCommand(cmdLine,db,iUser);
                 }
             }catch (exception &e){
                 cout<<"Bad line in"<<FILE_NAME<<":"<<cmdLine<<endl;
                 cout<<"Error: "<<e.what()<<endl;
-                //return 1;
+                exit(1);
             }
         }
         fileIn.close();
@@ -269,7 +329,10 @@ void mainWork(User* iUser){
         try{
             if(!cmd.empty()){
                 flag= true;
-                if(controller.runCommand(cmd)){
+                if(cmd=="b"){
+                    controller.buyFM(cmd,db,iUser,fileOut);
+                }
+                else if(controller.runCommand(cmd,db,iUser)){
                     fileOut<<cmd<<endl;
                 }
             }
@@ -284,7 +347,37 @@ void mainWork(User* iUser){
     }
     fileOut.close();
 }
-
+void administration(User* iUser,sqlite3* db){
+    vector<string> iInfo;
+    cout << "--------欢迎回来: "<<iUser->getInfo(iInfo)[1] <<' '<<iInfo[0]<<"-------------"<< endl;
+    AdminScreen();cout<<">>";
+    string c;
+    while(cin>>c){
+        if(c=="e"){
+            break;
+        }
+        if(c=="a"){
+            string info;
+            getline(cin,info);
+            istringstream ss(info);
+            string name,y1,m1,d1,y2,m2,d2,rate,la,risk;
+            ss>>name>>y1>>m1>>d1>>y2>>m2>>d2>>rate>>la>>risk;
+            Date begin(stoi(y1),stoi(m1),stoi(d1));Date end(stoi(y2),stoi(m2),stoi(d2));
+            FinancialManagement fm1(name,begin,end, stod(rate), stod(la), stod(risk));
+            fm1.addtoFM(db);
+        }
+        else if(c=="i"){
+            string id;int n;char* ms;
+            cin>>id>>n;
+            string sql = "UPDATE USER set STARS = "+ to_string(n)+" where NAME='"+id+"'; "\
+            "SELECT * FROM USER ";
+            sqlite3_exec(db,sql.c_str(), callback, nullptr,&ms);
+            cout<<"更新用户数据成功！"<<endl;
+        }
+        AdminScreen();cout<<">>";
+    }
+    return;
+}
 int main(){
 
     //数据库连接操作
@@ -295,14 +388,24 @@ int main(){
          "NAME TEXT PRIMARY KEY  NOT NULL," \
          "PASSWORD       TEXT     NOT NULL," \
          "IDENTITY         TEXT   NOT NULL,"\
-         "STARS INT);";
-    //创建示例用户
+         "STARS INT);";//创建用户数据表
+    char *fm_table="CREATE TABLE FM("  \
+         "NAME TEXT PRIMARY KEY  NOT NULL," \
+         "BEGIN       TEXT     NOT NULL," \
+         "END         TEXT   NOT NULL,"\
+         "RATE         REAL   NOT NULL,"\
+         "RISK         REAL   NOT NULL,"\
+         "LEAST        REAL NOT NULL);";//创建理财数据表
+    //创建示例用户,在测试中使用
     rc=sqlite3_exec(db,user_table, callback, nullptr, &msg);
-
     rc=sqlite3_exec(db,"INSERT INTO USER (NAME,PASSWORD,IDENTITY)"\
     "VALUES('lcyzsdh',2613,'Normal');", callback, nullptr, &msg);
     rc=sqlite3_exec(db,"INSERT INTO USER (NAME,PASSWORD,IDENTITY)"\
     "VALUES('ad',333,'Administrator');", callback, nullptr, &msg);
+
+    rc= sqlite3_exec(db,fm_table,callback, nullptr,&msg);
+    rc= sqlite3_exec(db,"INSERT INTO FM (NAME,BEGIN,END,RATE,RISK,LEAST)"\
+    "VALUES('NEW1','2025-1-1','2025-3-1',0.05,0.5,10000);",callback, nullptr,&msg);
 
     srand(time(nullptr));
     string u=load(0,db);User* us;
@@ -315,11 +418,13 @@ int main(){
     }
     else if(u.find('A')==0){
         us=new Administrator(u.substr(1));
+        administration(us,db);
     }
     else{
         us=new NormalUser(u.substr(1));
+        mainWork(us,db);
     }
-    mainWork(us);
+
     sqlite3_close(db);
     return 0;
 }

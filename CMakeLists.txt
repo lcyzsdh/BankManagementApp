@@ -11,8 +11,6 @@ add_executable(BankApp account.cpp
         accumulator.h
         user.h
         user.cpp
-        Analysis.cpp
-        Analysis.h
         FinancialManagement.h
 db/sqlite3.c
         OutputUtils.h)
